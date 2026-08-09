@@ -36,4 +36,4 @@ missing plugins from GitHub and rebuilds the state.
 
 ## License
 
-NYSL
+MIT

@@ -1,7 +1,7 @@
 *my-nvim-bootloader.txt*  Bootloader for dpp.vim
 
 Author: kkiyama117
-License: NYSL
+License: MIT
 
 ==============================================================================
 About                                          *my-nvim-bootloader-about*

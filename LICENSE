@@ -1,9 +1,21 @@
-NYSL Version 0.9982
+MIT License
 
-A. 本ソフトウェアは Everyone'sWare です。このソフトを手にしたものは、商用・非商用、改造・再配布等、あらゆる制限の下で利用できます。作者はこのソフトウェアについて、いかなる保証も行いません。このソフトウェアの利用によって生じた損害・利益等について、作者はいかなる責任も負いません。利用に関して生じた問題について、作者はいかなる義務も負いません。
+Copyright (c) 2026 kkiyama117
 
-B. 本ソフトウェアの著作権は作者にあります。ただし、著作者はこのソフトウェアの利用者に対し、その利用の範囲内において、著作権を放棄することを許諾します。
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-C. 本ソフトウェアの配布物(改変を施したものも含む)には、この文書(ライセンス)が添付されていなければなりません。ただし、配布物にこの文書が含まれている場合、改変者による追加・変更等は自由に行うことができます。
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-D. 本ソフトウェアの著作権者・改変者は、本ソフトウェアの利用に対し、いかなる権利も主張しません。
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
