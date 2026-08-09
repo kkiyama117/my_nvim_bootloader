@@ -6,6 +6,12 @@ Handles initial bootstrap and recovery when the compiled plugin state is
 missing or broken. See [doc](./doc/my-nvim-bootloader.txt) for the full
 flow (success path, F1/F2/F3 fallbacks, headless mode).
 
+## FOR HUMAN
+dppのinstallからmake_stateとかplugin missingの時のauto installまでやらせるやつ
+Shougoさん、kuuoteさんあたりのdotfilesを延々と読んで良さそうな処理を組み合わせたもの(+自作)
+全部AIにやらせたため、fallbackの条件の指定以外なんも見てません。
+使う際はそのまま使うより必要な部分をコピペした方が良いと思います。MITライセンスなので。
+
 ## Requirements
 
 - Neovim 0.9+
