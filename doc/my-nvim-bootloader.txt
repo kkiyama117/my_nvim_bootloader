@@ -1,0 +1,199 @@
+*my-nvim-bootloader.txt*  Bootloader for dpp.vim
+
+Author: kkiyama117
+License: NYSL
+
+==============================================================================
+About                                          *my-nvim-bootloader-about*
+
+Bootloader for dpp.vim plugin manager. Handles initial bootstrap and
+recovery when the compiled plugin state is missing or broken.
+
+The bootloader lives in `lua/my_nvim_bootloader/` and is called from the
+user's `init.lua` before VimEnter.
+
+==============================================================================
+Flow overview                                  *my-nvim-bootloader*
+
+The bootloader has three failure modes (F1/F2/F3) and one success path: >
+
+	init.lua:startup()
+	  │
+	  ├─ 1. Set dpp global variables (cache paths, minimum deps)
+	  ├─ 2. Prepend minimum_deps to runtimepath
+	  │     { dpp.vim, dpp-ext-lazy, denops.vim }
+	  │
+	  └─ 3. Call dpp#min#load_state()
+	         │
+	         ├─ OK, result == 0  ──→  SUCCESS: load state, set up
+	         │                        BufWritePost watchers, done.
+	         │
+	         ├─ OK, result != 0  ──→  F1: state broken/missing
+	         │                        → recover (see below)
+	         │
+	         └─ NG (E117)        ──→  F2: dpp.vim itself missing
+	                                  → rescue_min: git clone
+	                                    minimum_deps, restart
+<
+
+==============================================================================
+F1 recovery (state broken)               *my-nvim-bootloader-f1*
+
+Triggered when `dpp#min#load_state` returns non-zero (state.vim or
+startup.vim missing, or loading them errored).
+
+The F1 path: >
+
+	1. Ensure denops.vim is installed
+	   └─ if directory missing → git clone from GitHub
+
+	2. Load denops.vim plugin
+	   └─ runtime! plugin/denops.vim
+
+	3. Register DenopsReady autocmd (UI mode)
+	   └─ on DenopsReady → make_state.run()
+	      ├─ load_normal_deps() checks dpp-ext plugins
+	      ├─ if missing → F3 fallback → git clone them
+	      ├─ re-add to runtimepath
+	      └─ dpp#make_state() → writes state.vim + startup.vim
+
+	4. If headless (no UI):
+	   └─ start denops server directly
+	   └─ wait for denops running
+	   └─ call make_state.run() inline
+	   └─ wait for state.vim written
+	   └─ wait for Dpp:ext:installer:updateDone
+	      (user plugins installed by dpp-ext-installer)
+
+	5. Dpp:makeStatePost fires
+	   └─ on_make_state_post()
+	      ├─ load_state_live() sources startup.vim
+	      ├─ if ok → dpp#async_ext_action('installer', 'install')
+	      │          installs every not-installed user plugin
+	      └─ if ng  → state still broken, skip install
+<
+
+NOTE: Host configs that call `dpp#min#load_state` must guard any
+`require()` of not-yet-installed plugins with `pcall` (e.g. the
+nvim-notify hook does > pcall(require, 'notify') <). Without this,
+`dpp#min#load_state` errors and calls `dpp#util#_clear_state` which
+deletes the state files, causing an infinite rebuild loop.
+
+==============================================================================
+F2 fallback (dpp.vim missing)             *my-nvim-bootloader-f2*
+
+Triggered when `dpp#min#load_state` throws E117 (function not found),
+meaning dpp.vim itself is not installed.
+
+The F2 path: >
+
+	1. rescue_min(missing_plugins)
+	   └─ git clone each missing repo from GitHub
+	   └─ verify all directories exist
+	   └─ if UI → :restart! to load new plugins
+	   └─ if headless → warn and return (restart skipped)
+<
+
+`minimum_deps` installed by F2: >
+	Shougo/dpp.vim
+	Shougo/dpp-ext-lazy
+	vim-denops/denops.vim
+<
+
+==============================================================================
+F3 fallback (dpp-ext missing)           *my-nvim-bootloader-f3*
+
+Triggered by `make_state.run()` when `load_normal_deps()` finds dpp-ext
+plugins missing from the cache. This runs after denops is already
+loaded (DenopsReady has fired).
+
+The F3 path: >
+
+	1. rescue_normal(missing_plugins)
+	   └─ git clone each missing repo from GitHub
+	   └─ verify all directories exist
+	   └─ return true/false
+
+	2. On success → load_normal_deps() again
+	   └─ adds newly cloned plugins to runtimepath
+	   └─ without this, dpp#make_state logs:
+	      "Not found protocol: git"
+	      "Not found ext: toml"
+
+	3. dpp#make_state() → writes state.vim + startup.vim
+<
+
+`normal_deps` installed by F3: >
+	Shougo/dpp-ext-toml
+	Shougo/dpp-ext-local
+	Shougo/dpp-ext-installer
+	Shougo/dpp-ext-packspec
+	Shougo/dpp-protocol-git
+	Shougo/dpp-protocol-http
+	Shougo/dpp-ext-lazy
+	vim-denops/denops.vim
+<
+
+==============================================================================
+Headless mode                                 *my-nvim-bootloader-headless*
+
+When nvim is started without a UI (--headless, -es, or embedded), the
+bootloader adapts:
+
+- `setup_autocmd_load_state_failed` skips registering DenopsReady
+  autocmd (would race interactive sessions)
+- F1 path detects no UI and starts denops directly via
+  `denops#server#start()`
+- Waits for denops status == 'running' (up to 15s)
+- Calls make_state.run() inline
+- Waits for state.vim to appear (up to 60s)
+- Waits for Dpp:ext:installer:updateDone (up to 120s)
+- Restart is skipped (no UI to handle it)
+
+==============================================================================
+Global variables                     *my-nvim-bootloader-global-variables*
+
+The bootloader sets the following variables in `set_dpp_global_value()`
+(consumed by dpp.vim / dpp-ext and the plugin itself): >
+
+	my_nvim_bootloader#dpp#minimum_deps
+	my_nvim_bootloader#dpp#cache_home
+	my_nvim_bootloader#dpp#cache_github
+	my_nvim_bootloader#dpp#cache_local
+	my_nvim_bootloader#dpp#denops_script
+<
+
+`vimrc#is_debug` (set by the host config) enables debug notifications.
+
+==============================================================================
+History of fixes                             *my-nvim-bootloader-history*
+
+2025-08-06  Initial debugging session.
+
+PROBLEM: nvim could not start with config. The dpp cache only had
+dpp.vim and dpp-ext-lazy installed. denops.vim and all dpp-ext plugins
+were missing. The F1 path tried to load denops without checking if it
+exists, so DenopsReady never fired and the entire recovery chain
+dead-ended.
+
+FIXES APPLIED:
+
+1. lua/my_nvim_bootloader/init.lua
+   - Added vim-denops/denops.vim to minimum_deps
+   - F1 path: check if denops directory exists → git clone if missing
+   - F1 path: headless mode → start denops + make_state directly
+
+2. lua/my_nvim_bootloader/dpp/make_state.lua
+   - After F3 fallback clones plugins, re-run load_normal_deps to add
+     them to runtimepath
+
+3. lua/my_nvim_bootloader/dpp/auto_update.lua
+   - on_make_state_post default path: after state verification, trigger
+     dpp-ext-installer to install user plugins
+
+4. Host config hooks (e.g. nvim-notify)
+   - Wrapped require('notify') in pcall so state loading does not fail
+     when nvim-notify is not yet installed
+
+==============================================================================
+vim:tw=78:ft=help:

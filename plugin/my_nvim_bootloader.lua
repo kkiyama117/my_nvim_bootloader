@@ -1,0 +1,1 @@
+-- Empty plugin entry. Loaded at startup before VimEnter.
